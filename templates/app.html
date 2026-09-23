@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Flask run around
+    </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<style>
+   
+</style>
+<body>
+    <div class="container">
+        <h1>Getting data from the Database.</h1>
+    </div>
+    <h1>List of all users</h1>
+    <div class="users">
+        {% for user in users %}
+        <div class="user">
+            <h2>{{ user.lastname }} {{ user.firstname }}</h2>
+            <p>{{ user.email }}</p>
+            <p>{{ user.password }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="courses">
+
+    </div>
+</body>
+</html>

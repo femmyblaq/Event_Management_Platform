@@ -1,0 +1,35 @@
+ * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+        font-family: sans-serif;
+    }
+    body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .container {
+        border-radius: 8px;
+        width: 80%;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 3px 3px 4px #ccc;
+        margin-top: 20px;
+    }
+
+    .users {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .users .user {
+        padding: 20px;
+        box-shadow: 3px 3px 5px #ccc;
+        border-radius: 5px;
+    }

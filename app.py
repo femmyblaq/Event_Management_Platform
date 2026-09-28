@@ -7,7 +7,9 @@ from extension import bcrypt
 app = Flask(__name__)
 bcrypt.init_app(app)
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
+
 app.config.from_object(Config)
+
 @app.route("/")
 def check_connection():
     conn = None

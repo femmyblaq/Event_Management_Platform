@@ -85,8 +85,9 @@ def register():
                 "message": "User registrered successfully."
             }), 201
     except Exception as e:
-        print(f"Error: {str(e)}")
+        return jsonify(
+                        {
+                        "success": False, 
+                         "message": "Failed to register user", "error": str(e)}), 500
     finally:
-        if conn:
-            conn.rollback()
         conn.close()

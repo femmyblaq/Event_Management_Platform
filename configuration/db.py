@@ -1,4 +1,5 @@
 from config import Config
+# from flask import current_app
 import pymysql
 def get_connection():
     connection = pymysql.connect(

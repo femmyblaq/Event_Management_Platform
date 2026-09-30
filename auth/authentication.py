@@ -68,7 +68,7 @@ def register():
                         """, (name, email, hashed_password, role, verification_token))
             
             conn.commit()
-            verification_link = f"http://127.0.0.1:3000/{verification_token}"
+            verification_link = f"https://event-management-platform-1-343z.onrender.com/verify-email/{verification_token}"
             html=f"""
                     <html>
                         <body>
@@ -91,3 +91,29 @@ def register():
                          "message": "Failed to register user", "error": str(e)}), 500
     finally:
         conn.close()
+
+@auth_bp.route("/verify-email/<token>", methods=["GET"])
+def verify_email(token):
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                            SELECT id FROM users
+                           WHERE verification_token = %s
+                        """, (token))
+            
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({"success": False, "message": "Invalide verification link!"}), 400
+            
+            cursor.execute("""
+                            UPDATE users SET is_verified = TRUE,
+                            verification_token = NULL WHERE id = %s
+                        """, (user["id"],))
+            return jsonify({"success": True, "message": "User verified successfully!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+
+        

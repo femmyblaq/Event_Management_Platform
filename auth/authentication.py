@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from email_validator import validate_email, EmailNotValidError
-from extension import bcrypt
+from extension import bcrypt, jwt
 import secrets
 from email_service import send_verification_email
 from configuration.db import get_connection
@@ -90,7 +90,8 @@ def register():
                         "success": False, 
                          "message": "Failed to register user", "error": str(e)}), 500
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @auth_bp.route("/verify-email/<token>", methods=["GET"])
 def verify_email(token):
@@ -114,7 +115,9 @@ def verify_email(token):
             return jsonify({"success": True, "message": "User verified successfully!"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
-    
+    finally:
+            if conn:
+                conn.close()
 
 @auth_bp.route("/login", methods=["POST"])
 def login(request):
@@ -144,9 +147,12 @@ def login(request):
             
             if not user["is_verified"]:
                 return jsonify({"success": False, "message": "Please verify your email before logging in."}), 403
-            
-            return jsonify({"success": True, 
-                            "message": "Login successful.", 
+
+            access_token = jwt.create_access_token(identity=user["id"],
+                                                   additional_claims={"role": user["role"], "email": user["email"]})
+            return jsonify({"success": True,
+                            "message": "Login successful.",
+                            "access_token": access_token,
                             "user": {
                                 "id": user["id"],
                                 "name": user["name"],
@@ -155,3 +161,52 @@ def login(request):
                             }}), 200
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
+    finally:
+            if conn:
+                conn.close()
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "Data cannot be empty."})
+    
+    email = data.get("email")
+    if not email:
+        return jsonify({"success": False, "message": "Email cannot be empty."}), 400
+    
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                            SELECT id, name FROM users WHERE email = %s
+                        """, (email))
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({"success": False, "message": "User with this email does not exist."}), 404
+            
+            reset_token = secrets.token_urlsafe(32)
+            cursor.execute("""
+                            UPDATE users SET reset_token = %s WHERE id = %s
+                        """, (reset_token, user["id"]))
+            conn.commit()
+
+            reset_link = f"https://event-management-platform-1-343z.onrender.com/reset-password/{reset_token}"
+            html=f"""
+                    <html>
+                        <body>
+                            <h1>Password Reset Request</h1>
+                            <p>Click below to reset your password.</p>
+                            <a href="{reset_link}">Reset Password</a>
+                        </body>
+                    </html>
+                """
+            send_verification_email(email, "Reset Password", html)
+
+            return jsonify({"success": True, "message": "Password reset link sent to your email."}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+    finally:
+        if conn:
+             conn.close()

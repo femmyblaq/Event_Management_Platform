@@ -10,5 +10,6 @@ class Config:
     BREVO_API_KEY = os.getenv("BREVO_API_KEY")
     MAIL_FROM = os.getenv("MAIL_FROM")
     MAIL_FROM_TITLE = os.getenv("MAIL_FROM_TITLE")
-    
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 

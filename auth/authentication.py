@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from email_validator import validate_email, EmailNotValidError
+import oauth
 from extension import bcrypt, jwt
 import secrets
 from email_service import send_verification_email
@@ -247,3 +248,55 @@ def reset_password(token):
     finally:
         cursor.close()
         conn.close()
+
+@auth_bp.route("/google", methods=["GET"])
+def google_login():
+    redirect_uri = url_for("https://event-management-platform-1-343z.onrender.com/api/auth/google/callback", _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@auth_bp.route("/google/callback", methods=["GET"])
+def google_callback():
+    try:
+        token = oauth.google.authorize_access_token()
+        user_info = token.get("userinfo")
+        if not user_info:
+            # return jsonify({"success": False, "message": "Failed to retrieve user information from Google."}), 400
+
+            email = user_info.get("email")
+            name = user_info.get("name")
+            google_id = user_info.get("sub")
+            if not email or not name:
+                return jsonify({"success": False, "message": "Email or name not found in Google user information."}), 400
+            
+            #check if user already exists in the database
+            conn = None
+            try:
+                conn = get_connection()
+                with conn.cursor() as cursor:
+                    cursor.execure("""
+                                    SELECT u.id, u.name, u.email, u.role FROM OAuthAccount o 
+                                    JOIN users u ON o.user_id = u.id
+                                    WHERE o.provider = 'google' AND o.provider_user_id = %s
+                                """, (google_id,))
+                    user = cursor.fetchone()
+                    if user:
+                        user_id = user["id"]
+                    else:
+                        #check if user with the same email already exists
+                        cursor.execute("""
+                                        SELECT id FROM users WHERE email = %s
+                                    """, (email,))
+                        existing_user = cursor.fetchone()
+                        if existing_user:
+                            user_id = existing_user["id"]
+                        else:
+                            #create a new user in the database
+                            cursor.execute("""
+                                            INSERT INTO users (name, email, is_verified) 
+                                            VALUES (%s, %s, TRUE)
+                                        """, (name, email))
+                            user_id = cursor.lastrowid
+            except Exception as e:
+                return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500

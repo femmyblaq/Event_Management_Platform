@@ -35,8 +35,14 @@ def create_workers_profile(bio, user_id, location, experience_years, expected_da
             
             conn.commit()
 
-            return {}
+            return {
+                "sucess": True, 
+                "message": "Worker profile created successfully",
+                "worker_id":  worker_id,
+                "status": 201
+            }
 
-
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()

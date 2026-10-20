@@ -5,10 +5,12 @@ from auth.authentication import auth_bp
 from config import Config
 from extension import bcrypt, jwt, oauth, cors
 from vendors.routes import vendor_bp
+from workers.routes import worker_bp
 app = Flask(__name__)
 bcrypt.init_app(app)
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
-app.register_blueprint(vendor_bp, url_prefix="api/")
+app.register_blueprint(vendor_bp, url_prefix="/api/vendors")
+app.register_blueprint(worker_bp, url_prefix="/api/workers")
 jwt.init_app(app)
 app.config.from_object(Config)
 oauth.init_app(app)
